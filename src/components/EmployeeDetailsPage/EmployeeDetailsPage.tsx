@@ -3,9 +3,12 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import { useForm, SubmitHandler } from "react-hook-form";
-
+import { useMutation } from 'react-query';
+import axios from 'axios';
+import { useEffect, useMemo } from 'react';
 
 export interface EmployeeDetails {
+    id?: string;
     firstName: string;
     lastName: string;
     middleName: string;
@@ -19,13 +22,58 @@ export interface EmployeeDetails {
     finishDate: Date;
     isOngoing: boolean;
 }
-          
-const EmployeeDetailsPage = () => {
-    const { register, handleSubmit } = useForm<EmployeeDetails>();
-    const onSubmit: SubmitHandler<EmployeeDetails> = data => console.log(data);
+
+
+interface EmployeeDetailsProps {
+    employee?: EmployeeDetails;
+}
+
+const EmployeeDetailsPage = ({employee}: EmployeeDetailsProps) => {
+
+    const mutation = useMutation<unknown, unknown, EmployeeDetails>('employee', async (data) => {
+        if (employee?.id) {
+            // here we need to update instead of post
+            return axios.patch('http://localhost:8080/employees/' + employee.id, data)
+        } else {
+            // here we are creating new
+            return axios.post('http://localhost:8080/employees', data)
+        }
+    })
+
+    // const defaultValues = useMemo(() => {
+    //     return employee;
+    // }, [employee]);
+      
+    const { register, handleSubmit, reset } = useForm<EmployeeDetails>();
+    // employee ? {
+    //     defaultValues
+    // } : {}
+
+    useEffect(() => {
+        reset(employee);
+    }, [employee]);
+
+    const onSubmit: SubmitHandler<EmployeeDetails> = data => {
+        mutation.mutate(data);
+        console.log(data)
+    };
 
     return (
         <div style={{ maxWidth: 400, margin: '20px auto'}}>
+              <div>
+                {mutation.isLoading ? (
+                    'Adding employee...'
+                ) : (
+                    <>
+                    {mutation.isError ? (
+                        <div>An error occurred: {mutation.error instanceof Error ? mutation.error.message : `${mutation.error}`}</div>
+                    ) : null}
+            
+                    {mutation.isSuccess ? <div>Employee added!</div> : null}
+            
+                    </>
+                )}
+            </div>
             <h4>Personal Information</h4>
             <Form onSubmit={handleSubmit(onSubmit)}>
                 <Form.Group className="mb-3" controlId="formFullName">

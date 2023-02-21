@@ -2,13 +2,11 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import { useForm, SubmitHandler } from "react-hook-form";
+import { useEmployees } from '../../api/use-employees';
 import EmployeeCard from '../EmployeeCard/EmployeeCard';
 import { EmployeeDetails } from '../EmployeeDetailsPage/EmployeeDetailsPage';
 
 
-interface EmployeeCardProps {
-    employee: EmployeeDetails;
-}
 
 const employees: EmployeeDetails[] = [{
     firstName: 'John',
@@ -39,20 +37,37 @@ const employees: EmployeeDetails[] = [{
     isOngoing: false
 }]
 
-const EmployeeGallery = () => {
+interface EmployeeGalleryProps {
+    onEdit?: (emp: EmployeeDetails) => void;
+}
 
+const EmployeeGallery = ({onEdit}: EmployeeGalleryProps) => {
+    const employees = useEmployees();
+    console.log(employees);
+
+    if (employees.isLoading) {
+        return <span>Loading</span>;
+    }
+
+    if (employees.isError) {
+        return <span>Error: {employees.error instanceof Error ? employees.error.message : `${employees.error}` }</span>
+      }
+      
     return (
         <div>
             <h5>Employee Gallery</h5>
             <div>
-                { employees.map((employee: EmployeeDetails) => {
+                { employees.data?.map((employee: EmployeeDetails) => {
                     return <div key={employee.email}>
-                        <EmployeeCard employee={employee} />
+                        <EmployeeCard employee={employee} onEdit={() => onEdit?.(employee)}/>
                     </div>;
                 })}
             </div>
         </div>
     )
 }
+
+// onEdit === undefined ? undefined : onEdit(employee)
+// onEdit?.(employee)
 
 export default EmployeeGallery;
